@@ -1,0 +1,282 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template to deploy an Apache web server that dynamically adjusts capacity based on CPU load.
+
+
+Parameters:
+  PrivateSubnetCidr:
+    Type: String
+    Default: 10.0.3.0/24
+    Description: CIDR block for private subnet
+  PublicSubnetCidr:
+    Type: String
+    Default: 10.0.3.0/24
+    Description: CIDR block for private subnet
+  InstanceType: 
+    Type: String
+    Description: The EC2 instance type
+    Default: t2.micro
+    CPUPolicyTargetValue:
+      Type: String
+      Description: The target utilization for the CPU metric
+      Default: '50'
+  KeyName:
+    Description: Name of an existing EC2 key pair to allow SSH access to the instances
+    Type: 'AWS::EC2::KeyPair::KeyName'
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Description: The latest Amazon Linux 2 AMI from the Parameter Store
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+  SSHLocation:
+    Description: The IP address range that can be used to SSH to the EC2 instances
+    Type: String
+    MinLength: 9
+    MaxLength: 18
+    Default: 0.0.0.0/0
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  Subnets:
+    Type: 'List<AWS::EC2::Subnet::Id>'
+    Description: At least two public subnets in different Availability Zones in the selected VPC
+  VPC:
+    Type: 'AWS::EC2::VPC::Id'
+    Description: A virtual private cloud (VPC) that enables resources in public subnets to connect to the internet
+  ImageID:
+    Type: String
+    Default: "ami-02b7d5b1e55a7b5f1"
+  ProjectTag:
+    Type: String
+    Default: auto-scaling-lab
+
+Resources:
+  ASGLabVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "10.0.0.0/16"
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: ASGLabVpc
+        - Key: Project
+          Value: !Sub "${ProjectTag}"
+
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref ASGLabVpc
+      CidrBlock: 10.0.0.0/24
+      CidrBlock: ""
+      AvailabilityZone: !Select [0, !GetAZs  ""]
+   
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref ASGLabVpc
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs  ""]
+
+    # NAT Gateway
+  NatGatewayEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGatewayEIP.AllocationId
+      SubnetId: !Ref PublicSubnet1
+      Tags:
+        - Key: Name
+          Value: MyVPC-NAT
+        - Key: Project
+          Value: !Sub "${ProjectTag}"
+
+    PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+    WebServerSecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Properties:
+            GroupDescription: Security group for web server
+            VpcId: !Ref MyVPC
+            SecurityGroupIngress:
+              - IpProtocol: tcp
+                FromPort: 80
+                ToPort: 80
+                CidrIp: 0.0.0.0/0
+              - IpProtocol: tcp
+                FromPort: 22
+                ToPort: 22
+                CidrIp: 0.0.0.0/0
+          
+    MyIamInstanceProfile:
+      Type: AWS::IAM::InstanceProfile
+      Properties:
+        InstanceProfileName: MyIamInstanceProfile
+        Path: "/"
+        Roles:
+          - MyAdminRole
+      
+    SSMRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: ec2.amazonaws.com
+              Action: sts:AssumeRole
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        Tags:
+          - Key: Name
+            Value: SSMRole
+
+    MyLaunchTemplate:
+        Type: AWS::EC2::LaunchTemplate
+        Properties:
+            LaunchTemplateData:
+                IamInstanceProfile:
+                    Arn: !GetAtt
+                        - MyIamInstanceProfile
+                        - Arn
+                DisableApiTermination: true
+                ImageId: "ami-02b7d5b1e55a7b5f1"
+                InstanceType: t2.micro
+                KeyName: MyKeyPair
+                SecurityGroupIds:
+                    - 
+            LaunchTemplateName: "dals"
+
+
+
+
+    ELBSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: ELB Security Group
+        VpcId: !Ref ASGLabVpc
+        SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+    EC2SecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: EC2 Security Group: Allow SSH and HTTP requests
+        VpcId: !Ref ASGLabVpc
+        SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId:
+            Fn::GetAtt:
+                - ELBSecurityGroup
+                - GroupId
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SSHLocation
+
+    EC2TargetGroup:
+        Type: AWS::ElasticLoadBalancingV2::TargetGroup
+        Properties:
+            Name: EC2TargetGroup
+            HealthCheckIntervalSeconds: 30
+            HealthCheckProtocol: HTTP
+            HealthCheckTimeoutSeconds: 15
+            HealthyThresholdCount: 5
+            Matcher:
+            HttpCode: '200'
+            Port: 80
+            Protocol: HTTP
+            TargetGroupAttributes:
+                - Key: deregistration_delay.timeout_seconds
+            Value: '20'
+            UnhealthyThresholdCount: 3
+            VpcId: !Ref ASGLabVpc
+
+    ALBListener:
+        Type: AWS::ElasticLoadBalancingV2::Listener
+        Properties:
+            DefaultActions:
+                - Type: forward
+                    TargetGroupArn: !Ref EC2TargetGroup
+            LoadBalancerArn: !Ref ApplicationLoadBalancer
+            Port: 80
+            Protocol: HTTP
+
+    ApplicationLoadBalancer:
+      Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+      Properties:
+        Scheme: internet-facing
+        Subnets: !Ref PublicSubnet
+        SecurityGroups:
+          - !GetAtt ELBSecurityGroup.GroupId
+
+    # --- EC2 Launch Template
+    LaunchTemplate:
+      Type: AWS::EC2::LaunchTemplate
+      Properties: 
+        LaunchTemplateName: !Sub ${AWS::StackName}-launch-template
+        LaunchTemplateData:
+          ImageId: !Ref ImageID
+          InstanceType: !Ref InstanceType
+          KeyName: !Ref KeyName
+          SecurityGroupIds: 
+            - !Ref EC2SecurityGroup
+          UserData:
+            Fn::Base64: !Sub |
+              #!/bin/bash
+              yum update -y
+              yum install -y apache2
+              INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+              HTML_CONTENT="<h1>Hello from $(hostname -l | cut -d" " -f1) / ${INSTANCE_ID}</h1> \
+              <button>Stress</button"
+              echo "$HTML_CONTENT" > /var/www/html/index.html
+              systemctl restart apache2
+    
+    AutoScalingPolicy:
+      Type: AWS::ApplicationAutoScaling::ScalingPolicy
+      Properties:
+        PolicyName: WebServerScalingPolicy
+        PolicyType: TargetTrackingScaling
+        ScalingTargetId: !Ref WebServerASG
+        TargetTrackingConfiguration:
+          TargetValue: !Ref CPUPolicyTargetValue
+          PredefinedMetricSpecification:
+            PredefinedMetricType: ASGAverageCPUUtilization
+      
+    WebServerASG:
+      Type: AWS::AutoScaling::AutoScalingGroup
+      Properties:
+        LaunchTemplate:
+          LaunchTemplateId: !Ref LaunchTemplate
+          Version: !GetAtt LaunchTemplate.LatestVersionNumber
+        MaxSize: '3'
+        MinSize: '1'
+        TargetGroupARNs:
+          - !Ref EC2TargetGroup
+        VPCZoneIdentifier: 
+          - !Ref PrivateSubnet
+
+Outputs:
+  WebServerASG:
+    Description: Auto Scaling Group for the EC2 instance
+    Value: !Ref WebServerASG
+  VPCId:
+    Description: Id of the VPC 
+    Value: !Ref ASGLabVpc
+  ApplicationLoadBalancerDNSName:
+    Description: DNS name of the Application Load Balancer
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
+  WebServerPublicIP:  
+    Description: Public IP of the web server
+    Value: !GetAtt WebServerInstance.PublicIp
