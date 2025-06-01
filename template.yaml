@@ -206,39 +206,39 @@ Resources:
 
               cat > /var/www/html/index.html <<EOF
               <!DOCTYPE html>
-            <html>
-            <head>
-              <title>Auto Scaling Lab</title>
-            </head>
-            <body>
-              <h1>Hello from $IP_ADDRESS / $INSTANCE_ID</h1>
-              <button onclick="stressCPU()">Stress CPU</button>
-              <script>
-                function stressCPU() {
-                  fetch('/stress', { method: 'POST' })
-                    .then(response => response.text())
-                    .then(data => alert(data))
-                    .catch(error => console.error('Error:', error));
-                }
-              </script>
-            </body>
-            </html>
-            EOF
-            cat > /var/www/html/stress.sh <<EOF
-            #!/bin/bash
-            stress --cpu 1 --timeout 60
-            echo "CPU stress test completed"
-            EOF
-            chmod +x /var/www/html/stress.sh
-            cat > /etc/httpd/conf.d/stress.conf <<EOF
-            <VirtualHost *:80>
-                DocumentRoot /var/www/html
-                <Location /stress>
-                    ProxyPass "unix:/tmp/stress.sock|fcgi://localhost/var/www/html/stress.sh"
-                </Location>
-            </VirtualHost>
-            EOF
-            systemctl restart httpd
+              <html>
+              <head>
+                <title>Auto Scaling Lab</title>
+              </head>
+              <body>
+                <h1>Hello from $IP_ADDRESS / $INSTANCE_ID</h1>
+                <button onclick="stressCPU()">Stress CPU</button>
+                <script>
+                  function stressCPU() {
+                    fetch('/stress', { method: 'POST' })
+                      .then(response => response.text())
+                      .then(data => alert(data))
+                      .catch(error => console.error('Error:', error));
+                  }
+                </script>
+              </body>
+              </html>
+              EOF
+              cat > /var/www/html/stress.sh <<EOF
+              #!/bin/bash
+              stress --cpu 1 --timeout 60
+              echo "CPU stress test completed"
+              EOF
+              chmod +x /var/www/html/stress.sh
+              cat > /etc/httpd/conf.d/stress.conf <<EOF
+              <VirtualHost *:80>
+                  DocumentRoot /var/www/html
+                  <Location /stress>
+                      ProxyPass "unix:/tmp/stress.sock|fcgi://localhost/var/www/html/stress.sh"
+                  </Location>
+              </VirtualHost>
+              EOF
+              systemctl restart httpd
     
     AutoScalingPolicy:
       Type: AWS::ApplicationAutoScaling::ScalingPolicy
