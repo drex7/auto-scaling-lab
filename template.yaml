@@ -245,7 +245,7 @@ Resources:
     Properties:
       PolicyName: WebServerScalingPolicy
       PolicyType: TargetTrackingScaling
-      ScalingTargetId: !Ref AutoScalingGroup
+      AutoScalingGroupName: !Ref AutoScalingGroup
       TargetTrackingConfiguration:
         TargetValue: !Ref CPUPolicyTargetValue
         PredefinedMetricSpecification:
