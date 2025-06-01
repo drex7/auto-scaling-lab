@@ -1,0 +1,13 @@
+template-file-path: template.yaml
+parameters:
+  Author: Derrick Asamoah
+  VpcCidr: 10.0.0.0/16
+  SubnetCidrPublic1: 10.0.1.0/24
+  SubnetCidrPublic2: 10.0.2.0/24
+  SubnetCidrPrivate1: 10.0.3.0/24
+  SubnetCidrPrivate2: 10.0.4.0/24
+  ImageID: ami-02b7d5b1e55a7b5f1
+  ProjectTag: auto-scaling-lab
+  InstanceType: t2.micro
+  CPUPolicyTargetValue: 50
+tags: {}
