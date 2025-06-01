@@ -3,14 +3,26 @@ Description: CloudFormation template to deploy an Apache web server that dynamic
 
 
 Parameters:
-  PrivateSubnetCidr:
+  VpcCidr:
+    Type: String
+    Default: 10.0.0.0/16
+    Description: CIDR block for the VPC
+  SubnetCidrPublic1:
+    Type: String
+    Default: 10.0.1.0/24
+    Description: CIDR block for public subnet 1
+  SubnetCidrPublic2:
+    Type: String
+    Default: 10.0.2.0/24
+    Description: CIDR block for public subnet 2
+  SubnetCidrPrivate1:
     Type: String
     Default: 10.0.3.0/24
-    Description: CIDR block for private subnet
-  PublicSubnetCidr:
+    Description: CIDR block for private subnet 1
+  SubnetCidrPrivate2:
     Type: String
-    Default: 10.0.3.0/24
-    Description: CIDR block for private subnet
+    Default: 10.0.4.0/24
+    Description: CIDR block for private subnet 2
   InstanceType: 
     Type: String
     Description: The EC2 instance type
@@ -30,7 +42,7 @@ Resources:
   ASGLabVPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: "10.0.0.0/16"
+      CidrBlock: !Ref VpcCidr
       EnableDnsSupport: true
       EnableDnsHostnames: true
       Tags:
@@ -43,21 +55,21 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref ASGLabVPC
-      CidrBlock: 10.0.1.0/24
+      CidrBlock: !Ref SubnetCidrPrivate1
       AvailabilityZone: !Select [0, !GetAZs  ""]
   
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref ASGLabVPC
-      CidrBlock: 10.0.2.0/24
+      CidrBlock: !Ref SubnetCidrPrivate2
       AvailabilityZone: !Select [1, !GetAZs  ""]
    
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref ASGLabVPC
-      CidrBlock: 10.0.3.0/24
+      CidrBlock: !Ref SubnetCidrPublic1
       MapPublicIpOnLaunch: true
       AvailabilityZone: !Select [0, !GetAZs  ""]
   
@@ -65,7 +77,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref ASGLabVPC
-      CidrBlock: 10.0.4.0/24
+      CidrBlock: !Ref SubnetCidrPublic2
       MapPublicIpOnLaunch: true
       AvailabilityZone: !Select [1, !GetAZs  ""]
 
@@ -82,23 +94,6 @@ Resources:
     Properties:
       VpcId: !Ref ASGLabVPC
       InternetGatewayId: !Ref InternetGateway
-
-  # NAT Gateway
-  NatGatewayEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-
-  NatGateway:
-    Type: AWS::EC2::NatGateway
-    Properties:
-      AllocationId: !GetAtt NatGatewayEIP.AllocationId
-      SubnetId: !Ref PublicSubnet1
-      Tags:
-        - Key: Name
-          Value: MyVPC-NAT
-        - Key: Project
-          Value: !Sub "${ProjectTag}"
 
     PublicRouteTable:
       Type: AWS::EC2::RouteTable
@@ -126,13 +121,6 @@ Resources:
       Properties:
         SubnetId: !Ref PublicSubnet2
         RouteTableId: !Ref PublicRouteTable
-
-    PrivateRoute:
-      Type: AWS::EC2::Route
-      Properties:
-        RouteTableId: !Ref PrivateRouteTable
-        DestinationCidrBlock: 0.0.0.0/0
-        NatGatewayId: !Ref NatGateway
 
     WebServerSecurityGroup:
       Type: AWS::EC2::SecurityGroup
@@ -204,9 +192,8 @@ Resources:
       Properties: 
         LaunchTemplateName: !Sub ${AWS::StackName}-launch-template
         LaunchTemplateData:
-          ImageId: "ami-02b7d5b1e55a7b5f1"
+          ImageId: !Ref ImageID
           InstanceType: !Ref InstanceType
-          KeyName: !Ref KeyName
           SecurityGroupIds: 
             - !Ref EC2SecurityGroup
           UserData:
@@ -217,9 +204,6 @@ Resources:
               INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
               IP_ADDRESS="$(hostname -l | cut -d" " -f1)"
 
-              HTML_CONTENT="<h1>Hello from $IP_ADDRESS / ${INSTANCE_ID}</h1> \
-              <button>Stress</button"
-              echo "$HTML_CONTENT" > /var/www/html/index.html
               cat > /var/www/html/index.html <<EOF
               <!DOCTYPE html>
             <html>
