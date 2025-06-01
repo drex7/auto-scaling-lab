@@ -95,118 +95,118 @@ Resources:
       VpcId: !Ref ASGLabVPC
       InternetGatewayId: !Ref InternetGateway
 
-    PublicRouteTable:
-      Type: AWS::EC2::RouteTable
-      Properties:
-        VpcId: !Ref ASGLabVPC
-        Tags:
-          - Key: Name
-            Value: PublicRouteTable
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref ASGLabVPC
+      Tags:
+        - Key: Name
+          Value: PublicRouteTable
 
-    PublicRoute:
-      Type: AWS::EC2::Route
-      Properties:
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
       RouteTableId: !Ref PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
 
-    PublicSubnet1RouteTableAssociation:
-      Type: AWS::EC2::SubnetRouteTableAssociation
-      Properties:
-        SubnetId: !Ref PublicSubnet1
-        RouteTableId: !Ref PublicRouteTable
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
 
-    PublicSubnet2RouteTableAssociation:
-      Type: AWS::EC2::SubnetRouteTableAssociation
-      Properties:
-        SubnetId: !Ref PublicSubnet2
-        RouteTableId: !Ref PublicRouteTable
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
 
-    WebServerSecurityGroup:
-      Type: AWS::EC2::SecurityGroup
-      Properties:
-        GroupDescription: Security group for web server
-        VpcId: !Ref MyVPC
-        SecurityGroupIngress:
-          - IpProtocol: tcp
-            FromPort: 80
-            ToPort: 80
-            CidrIp: 0.0.0.0/0
-        Tags:
-          - Key: Name
-            Value: WebServerSecurityGroup
+  WebServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for web server
+      VpcId: !Ref ASGLabVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: WebServerSecurityGroup
 
-    ELBSecurityGroup:
-      Type: AWS::EC2::SecurityGroup
-      Properties:
-        GroupDescription: ELB Security Group
-        VpcId: !Ref ASGLabVPC
-        SecurityGroupIngress:
-          - IpProtocol: tcp
-            FromPort: 80
-            ToPort: 80
-            CidrIp: 0.0.0.0/0
-        Tags:
-          - Key: Name
-            Value: ELBSecurityGroup
+  ELBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ELB Security Group
+      VpcId: !Ref ASGLabVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: ELBSecurityGroup
 
-    AutoScalingLabTargetGroup:
-      Type: AWS::ElasticLoadBalancingV2::TargetGroup
-      Properties:
-        Name: AutoScalingLabTargetGroup
-        VpcId: !Ref ASGLabVPC
-        Port: 80
-        Protocol: HTTP
-        HealthCheckProtocol: HTTP
-        HealthCheckPath: /
-        HealthCheckIntervalSeconds: 30
-        HealthCheckTimeoutSeconds: 5
-        HealthyThresholdCount: 2
-        UnhealthyThresholdCount: 2          
-        Tags:
-          - Key: Name
-            Value: AutoScalingLabTargetGroup
+  AutoScalingLabTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: AutoScalingLabTargetGroup
+      VpcId: !Ref ASGLabVPC
+      Port: 80
+      Protocol: HTTP
+      HealthCheckProtocol: HTTP
+      HealthCheckPath: /
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2          
+      Tags:
+        - Key: Name
+          Value: AutoScalingLabTargetGroup
 
-    ELBListener:
-      Type: AWS::ElasticLoadBalancingV2::Listener
-      Properties:
-        LoadBalancerArn: !Ref ApplicationLoadBalancer
-        DefaultActions:
-          - Type: forward
-            TargetGroupArn: !Ref AutoScalingLabTargetGroup
+  ELBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref AutoScalingLabTargetGroup
 
-    # Application Load Balancer
-    ApplicationLoadBalancer:
-      Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-      Properties:
-        Scheme: internet-facing
-        Subnets: 
-          - !Ref PublicSubnet1
-          - !Ref PublicSubnet2
-        SecurityGroups:
-          - !Ref ELBSecurityGroup
+  # Application Load Balancer
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internet-facing
+      Subnets: 
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      SecurityGroups:
+        - !Ref ELBSecurityGroup
 
-    # --- EC2 Launch Template
-    LaunchTemplate:
-      Type: AWS::EC2::LaunchTemplate
-      Properties: 
-        LaunchTemplateName: !Sub ${AWS::StackName}-launch-template
-        LaunchTemplateData:
-          ImageId: !Ref ImageID
-          InstanceType: !Ref InstanceType
-          SecurityGroupIds: 
-            - !Ref EC2SecurityGroup
-          UserData:
-            Fn::Base64: !Sub |
-              #!/bin/bash
-              yum update -y
-              yum install -y httpd stress
-              INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-              IP_ADDRESS="$(hostname -l | cut -d" " -f1)"
+  # --- EC2 Launch Template
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties: 
+      LaunchTemplateName: !Sub ${AWS::StackName}-launch-template
+      LaunchTemplateData:
+        ImageId: !Ref ImageID
+        InstanceType: !Ref InstanceType
+        SecurityGroupIds: 
+          - !Ref WebServerSecurityGroup
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            yum update -y
+            yum install -y httpd stress
+            INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+            IP_ADDRESS="$(hostname -l | cut -d" " -f1)"
 
-              cat > /var/www/html/index.html <<EOF
-              <!DOCTYPE html>
-              <html>
+            cat > /var/www/html/index.html <<EOF
+            <!DOCTYPE html>
+            <html>
               <head>
                 <title>Auto Scaling Lab</title>
               </head>
@@ -222,55 +222,55 @@ Resources:
                   }
                 </script>
               </body>
-              </html>
-              EOF
-              cat > /var/www/html/stress.sh <<EOF
-              #!/bin/bash
-              stress --cpu 1 --timeout 60
-              echo "CPU stress test completed"
-              EOF
-              chmod +x /var/www/html/stress.sh
-              cat > /etc/httpd/conf.d/stress.conf <<EOF
-              <VirtualHost *:80>
-                  DocumentRoot /var/www/html
-                  <Location /stress>
-                      ProxyPass "unix:/tmp/stress.sock|fcgi://localhost/var/www/html/stress.sh"
-                  </Location>
-              </VirtualHost>
-              EOF
-              systemctl restart httpd
+            </html>
+            EOF
+            cat > /var/www/html/stress.sh <<EOF
+            #!/bin/bash
+            stress --cpu 1 --timeout 60
+            echo "CPU stress test completed"
+            EOF
+            chmod +x /var/www/html/stress.sh
+            cat > /etc/httpd/conf.d/stress.conf <<EOF
+            <VirtualHost *:80>
+                DocumentRoot /var/www/html
+                <Location /stress>
+                  ProxyPass "unix:/tmp/stress.sock|fcgi://localhost/var/www/html/stress.sh"
+                </Location>
+            </VirtualHost>
+            EOF
+            systemctl restart httpd
     
-    AutoScalingPolicy:
-      Type: AWS::ApplicationAutoScaling::ScalingPolicy
-      Properties:
-        PolicyName: WebServerScalingPolicy
-        PolicyType: TargetTrackingScaling
-        ScalingTargetId: !Ref AutoScalingGroup
-        TargetTrackingConfiguration:
-          TargetValue: !Ref CPUPolicyTargetValue
-          PredefinedMetricSpecification:
-            PredefinedMetricType: ASGAverageCPUUtilization
+  AutoScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: WebServerScalingPolicy
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref AutoScalingGroup
+      TargetTrackingConfiguration:
+        TargetValue: !Ref CPUPolicyTargetValue
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
       
-    AutoScalingGroup:
-      Type: AWS::AutoScaling::AutoScalingGroup
-      Properties:
-        LaunchTemplate:
-          LaunchTemplateId: !Ref LaunchTemplate
-          Version: !GetAtt LaunchTemplate.LatestVersionNumber
-        MaxSize: '3'
-        MinSize: '1'
-        DesiredCapacity: '1'
-        TargetGroupARNs:
-          - !Ref AutoScalingLabTargetGroup
-        HealthCheckType: ELB
-        HealthCheckGracePeriod: 300
-        VPCZoneIdentifier: 
-          - !Ref PrivateSubnet1
-          - !Ref PrivateSubnet2
-        Tags:
-          - Key: Name
-            Value: AutoScalingLabInstance
-            PropagateAtLaunch: true
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      MaxSize: '3'
+      MinSize: '1'
+      DesiredCapacity: '1'
+      TargetGroupARNs:
+        - !Ref AutoScalingLabTargetGroup
+      HealthCheckType: ELB
+      HealthCheckGracePeriod: 300
+      VPCZoneIdentifier: 
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      Tags:
+        - Key: Name
+          Value: AutoScalingLabInstance
+          PropagateAtLaunch: true
 
 Outputs:
   ALBEndpoint:
