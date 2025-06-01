@@ -241,10 +241,11 @@ Resources:
             systemctl restart httpd
     
   AutoScalingPolicy:
-    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Type: AWS::AutoScaling::ScalingPolicy
     Properties:
       PolicyType: TargetTrackingScaling
       AutoScalingGroupName: !Ref AutoScalingGroup
+      Cooldown: '300'
       TargetTrackingConfiguration:
         TargetValue: !Ref CPUPolicyTargetValue
         PredefinedMetricSpecification:
