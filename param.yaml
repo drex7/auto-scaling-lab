@@ -1,6 +1,5 @@
 template-file-path: template.yaml
 parameters:
-  Author: Derrick Asamoah
   VpcCidr: 10.0.0.0/16
   SubnetCidrPublic1: 10.0.1.0/24
   SubnetCidrPublic2: 10.0.2.0/24
