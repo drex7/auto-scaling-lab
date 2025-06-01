@@ -243,7 +243,6 @@ Resources:
   AutoScalingPolicy:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
     Properties:
-      PolicyName: WebServerScalingPolicy
       PolicyType: TargetTrackingScaling
       AutoScalingGroupName: !Ref AutoScalingGroup
       TargetTrackingConfiguration:
