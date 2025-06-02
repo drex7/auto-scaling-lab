@@ -136,10 +136,10 @@ Resources:
         - Key: Name
           Value: WebServerSecurityGroup
 
-  ELBSecurityGroup:
+  ALBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: ELB Security Group
+      GroupDescription: Security Group for Application Load Balancer
       VpcId: !Ref ASGLabVPC
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -148,7 +148,7 @@ Resources:
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
-          Value: ELBSecurityGroup
+          Value: ALBSecurityGroup
 
   AutoScalingLabTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -167,10 +167,13 @@ Resources:
         - Key: Name
           Value: AutoScalingLabTargetGroup
 
-  ELBListener:
+  ALBListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
+    Description: Listener for the Application Load Balancer
     Properties:
       LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
       DefaultActions:
         - Type: forward
           TargetGroupArn: !Ref AutoScalingLabTargetGroup
@@ -180,11 +183,12 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       Scheme: internet-facing
+      Type: application
       Subnets: 
         - !Ref PublicSubnet1
         - !Ref PublicSubnet2
       SecurityGroups:
-        - !Ref ELBSecurityGroup
+        - !Ref ALBSecurityGroup
 
   # --- EC2 Launch Template
   LaunchTemplate:
