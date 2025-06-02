@@ -33,7 +33,7 @@ Parameters:
     Default: '50'
   ImageID:
     Type: String
-    Default: ami-0c9f81aa89d014344
+    Default: "ami-02b7d5b1e55a7b5f1"
   ProjectTag:
     Type: String
     Default: auto-scaling-lab
@@ -48,8 +48,18 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: ec2.amazonaws.com
-            Action: sts:AssumeRole
+              Service: [ ec2.amazonaws.com ]
+            Action: [ sts:AssumeRole ]
+      Path: /
+      Policies:
+        - PolicyName: S3AccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action: [ 's3:GetObject' ]
+              Resource:
+                - !Sub 'arn:aws:s3:${AWS::Region}:${AWS::AccountId}:user-data-scripts/*' 
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
       Tags:
@@ -231,6 +241,11 @@ Resources:
           FromPort: 80
           ToPort: 80
           CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: !Ref VpcCidr
       Tags:
         - Key: Name
           Value: ALBSecurityGroup
@@ -244,8 +259,9 @@ Resources:
       Protocol: HTTP
       HealthCheckProtocol: HTTP
       HealthCheckPath: /
+      Matcher:
+        HttpCode: "200"
       HealthCheckIntervalSeconds: 30
-      HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2
       UnhealthyThresholdCount: 2          
       Tags:
