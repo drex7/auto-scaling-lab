@@ -63,10 +63,6 @@ Resources:
     Properties:
       Roles:
         - !Ref EC2InstanceRole
-      Tags:
-        - Key: Project
-          Value: !Sub "${ProjectTag}"
-      
 
   ASGLabVPC:
     Type: AWS::EC2::VPC
