@@ -39,6 +39,29 @@ Parameters:
     Default: auto-scaling-lab
 
 Resources:
+  # IAM Role for EC2 Instances (for SSM)
+  EC2InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Tags:
+        - Key: Name
+          Value: AutoScalingLabEC2Role
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref EC2InstanceRole
+
   ASGLabVPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -57,6 +80,9 @@ Resources:
       VpcId: !Ref ASGLabVPC
       CidrBlock: !Ref SubnetCidrPrivate1
       AvailabilityZone: !Select [0, !GetAZs  ""]
+      Tags:
+        - Key: Name
+          Value: ASGPrivateSubnet1
   
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
@@ -64,6 +90,9 @@ Resources:
       VpcId: !Ref ASGLabVPC
       CidrBlock: !Ref SubnetCidrPrivate2
       AvailabilityZone: !Select [1, !GetAZs  ""]
+      Tags:
+        - Key: Name
+          Value: ASGPrivateSubnet2
    
   PublicSubnet1:
     Type: AWS::EC2::Subnet
@@ -72,6 +101,9 @@ Resources:
       CidrBlock: !Ref SubnetCidrPublic1
       MapPublicIpOnLaunch: true
       AvailabilityZone: !Select [0, !GetAZs  ""]
+      Tags:
+        - Key: Name
+          Value: ASGPublicSubnet1
   
   PublicSubnet2:
     Type: AWS::EC2::Subnet
@@ -80,6 +112,9 @@ Resources:
       CidrBlock: !Ref SubnetCidrPublic2
       MapPublicIpOnLaunch: true
       AvailabilityZone: !Select [1, !GetAZs  ""]
+      Tags:
+        - Key: Name
+          Value: ASGPublicSubnet2
 
   # Internet Gateway
   InternetGateway:
@@ -198,6 +233,9 @@ Resources:
       LaunchTemplateData:
         ImageId: !Ref ImageID
         InstanceType: !Ref InstanceType
+        IamInstanceProfile:
+          Name: !Ref EC2InstanceProfile
+        KeyName: !Ref EC2KeyPair
         SecurityGroupIds: 
           - !Ref WebServerSecurityGroup
         UserData:
