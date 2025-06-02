@@ -241,7 +241,7 @@ Resources:
         SecurityGroupIds: 
           - !Ref WebServerSecurityGroup
         TagSpecifications:
-          - ResourceType: "launch-template"
+          - ResourceType: "instance"
             Tags:
             - Key: "Project"
               Value: !Sub "${ProjectTag}"
