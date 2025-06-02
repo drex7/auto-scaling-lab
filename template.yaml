@@ -55,12 +55,18 @@ Resources:
       Tags:
         - Key: Name
           Value: AutoScalingLabEC2Role
+        - Key: Project
+          Value: !Sub "${ProjectTag}"
 
   EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Roles:
         - !Ref EC2InstanceRole
+      Tags:
+        - Key: Project
+          Value: !Sub "${ProjectTag}"
+      
 
   ASGLabVPC:
     Type: AWS::EC2::VPC
@@ -235,7 +241,7 @@ Resources:
         InstanceType: !Ref InstanceType
         IamInstanceProfile:
           Name: !Ref EC2InstanceProfile
-        KeyName: !Ref EC2KeyPair
+        KeyName: EC2KeyPair
         SecurityGroupIds: 
           - !Ref WebServerSecurityGroup
         UserData:
