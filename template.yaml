@@ -235,7 +235,7 @@ Resources:
         InstanceType: !Ref InstanceType
         IamInstanceProfile:
           Name: !Ref EC2InstanceProfile
-        KeyName: !Ref EC2KeyPair
+        KeyName: EC2KeyPair
         SecurityGroupIds: 
           - !Ref WebServerSecurityGroup
         UserData:
