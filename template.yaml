@@ -137,13 +137,13 @@ Resources:
           Value: AutoScalingLabIGW
   
   NatGateway:
-  Type: AWS::EC2::NatGateway
-  Properties:
-    SubnetId: !Ref PublicSubnet1
-    AllocationId: !GetAtt EIP.AllocationId
-    Tags:
-      - Key: Name
-        Value: AutoScalingLabNatGateway
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      AllocationId: !GetAtt EIP.AllocationId
+      Tags:
+        - Key: Name
+          Value: AutoScalingLabNatGateway
 
   EIP:
     Type: AWS::EC2::EIP
