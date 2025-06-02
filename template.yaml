@@ -59,7 +59,7 @@ Resources:
             - Effect: Allow
               Action: [ 's3:GetObject' ]
               Resource:
-                - !Sub 'arn:aws:s3:${AWS::Region}:${AWS::AccountId}:user-data-scripts/*' 
+                - !Sub 'arn:aws:s3:::user-data-scripts/*' 
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
       Tags:
