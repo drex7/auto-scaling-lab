@@ -243,6 +243,8 @@ Resources:
             #!/bin/bash
             yum update -y
             yum install -y httpd stress
+            systemctl start httpd
+            systemctl enable httpd
             INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
             IP_ADDRESS="$(hostname -l | cut -d" " -f1)"
 
