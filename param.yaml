@@ -5,7 +5,7 @@ parameters:
   SubnetCidrPublic2: 10.0.2.0/24
   SubnetCidrPrivate1: 10.0.3.0/24
   SubnetCidrPrivate2: 10.0.4.0/24
-  ImageID: ami-02b7d5b1e55a7b5f1
+  ImageID: ami-0c9f81aa89d014344
   ProjectTag: auto-scaling-lab
   InstanceType: t2.micro
   CPUPolicyTargetValue: 50

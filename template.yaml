@@ -33,7 +33,7 @@ Parameters:
     Default: '50'
   ImageID:
     Type: String
-    Default: "ami-02b7d5b1e55a7b5f1"
+    Default: ami-0c9f81aa89d014344
   ProjectTag:
     Type: String
     Default: auto-scaling-lab
