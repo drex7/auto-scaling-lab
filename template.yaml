@@ -7,6 +7,9 @@ Parameters:
     Type: String
     Default: 10.0.0.0/16
     Description: CIDR block for the VPC
+  LatestAmazonLinuxAMI:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
   SubnetCidrPublic1:
     Type: String
     Default: 10.0.1.0/24
@@ -31,9 +34,6 @@ Parameters:
     Type: String
     Description: The target utilization for the CPU metric
     Default: '50'
-  ImageID:
-    Type: String
-    Default: "ami-02b7d5b1e55a7b5f1"
   ProjectTag:
     Type: String
     Default: auto-scaling-lab
@@ -301,7 +301,7 @@ Resources:
     Properties: 
       LaunchTemplateName: !Sub ${AWS::StackName}-launch-template
       LaunchTemplateData:
-        ImageId: !Ref ImageID
+        ImageId: !Ref LatestAmazonLinuxAMI
         InstanceType: !Ref InstanceType
         IamInstanceProfile:
           Name: !Ref EC2InstanceProfile
