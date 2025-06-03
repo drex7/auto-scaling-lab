@@ -138,6 +138,7 @@ Resources:
   
   NatGateway:
     Type: AWS::EC2::NatGateway
+    DependsOn: VPCGatewayAttachment
     Properties:
       SubnetId: !Ref PublicSubnet1
       AllocationId: !GetAtt EIP.AllocationId
@@ -147,6 +148,7 @@ Resources:
 
   EIP:
     Type: AWS::EC2::EIP
+    DependsOn: VPCGatewayAttachment
     Properties:
       Domain: vpc
 
@@ -164,7 +166,7 @@ Resources:
       Tags:
         - Key: Name
           Value: PublicRouteTable
-
+  
   PublicRoute:
     Type: AWS::EC2::Route
     Properties:
@@ -221,12 +223,14 @@ Resources:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: 0.0.0.0/0
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
+          CidrIp: 10.0.3.31/32
+      SecurityGroupEgress:
+        - IpProtocol: "-1"
           CidrIp: 0.0.0.0/0
-        
       Tags:
         - Key: Name
           Value: WebServerSecurityGroup
@@ -315,7 +319,7 @@ Resources:
 
             exec > >(tee /var/log/user-data.log) 2>&1
             cho "Starting UserData execution at $(date)"
-            
+
             yum update -y
             yum install -y httpd stress mod_proxy_fcgi
             systemctl start httpd
