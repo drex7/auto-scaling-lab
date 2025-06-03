@@ -257,13 +257,13 @@ Resources:
       VpcId: !Ref ASGLabVPC
       Port: 80
       Protocol: HTTP
-      HealthCheckProtocol: HTTP
       HealthCheckPath: /
       Matcher:
         HttpCode: "200"
       HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 10
       HealthyThresholdCount: 2
-      UnhealthyThresholdCount: 2          
+      UnhealthyThresholdCount: 2       
       Tags:
         - Key: Name
           Value: AutoScalingLabTargetGroup
@@ -311,13 +311,17 @@ Resources:
               Value: !Sub "${ProjectTag}"
         UserData:
           Fn::Base64: !Sub |
-            #!/bin/bash
+            #!/bin/bash -xe
+
+            exec > >(tee /var/log/user-data.log) 2>&1
+            cho "Starting UserData execution at $(date)"
+            
             yum update -y
             yum install -y httpd stress mod_proxy_fcgi
             systemctl start httpd
             systemctl enable httpd
             INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-            IP_ADDRESS="$(hostname -l | cut -d" " -f1)"
+            IP_ADDRESS="$(hostname -I | cut -d" " -f1)"
 
             cat > /var/www/html/index.html <<EOF
             <!DOCTYPE html>
@@ -378,7 +382,7 @@ Resources:
       TargetGroupARNs:
         - !Ref AutoScalingLabTargetGroup
       HealthCheckType: ELB
-      HealthCheckGracePeriod: 300
+      HealthCheckGracePeriod: 600
       VPCZoneIdentifier: 
         - !Ref PrivateSubnet1
         - !Ref PrivateSubnet2
