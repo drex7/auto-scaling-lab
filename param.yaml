@@ -5,8 +5,8 @@ parameters:
   SubnetCidrPublic2: 10.0.2.0/24
   SubnetCidrPrivate1: 10.0.3.0/24
   SubnetCidrPrivate2: 10.0.4.0/24
-  ImageID: ami-02b7d5b1e55a7b5f1
   ProjectTag: auto-scaling-lab
   InstanceType: t2.micro
   CPUPolicyTargetValue: 50
+  LatestAmazonLinuxAMI: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
 tags: {}
