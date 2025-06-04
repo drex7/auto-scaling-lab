@@ -321,7 +321,9 @@ Resources:
             cho "Starting UserData execution at $(date)"
 
             yum update -y
-            yum install -y httpd
+            yum install -y httpd stress
+            systemctl start httpd
+            systemctl enable httpd
             
             INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
             IP_ADDRESS="$(hostname -I | cut -d" " -f1)"
@@ -346,7 +348,19 @@ Resources:
               </body>
             </html>
             EOF
-            systemctl restart httpd
+
+            # Endpoint for CPU stress
+            cat <<EOF > /var/www/html/simulate-cpu-stress
+            #!/bin/bash
+            echo "Content-type: text/html"
+            echo ""
+            echo "<html><body>"
+            echo "Starting CPU stress test for 60 seconds..."
+            echo "</body></html>"
+            nohup stress --cpu 2 --timeout 60 >/dev/null 2>&1 &
+            EOF
+            chmod +x /var/www/html/simulate-cpu-stress
+            ln -s /var/www/html/simulate-cpu-stress /var/www/cgi-bin/simulate-cpu-stress
   AutoScalingPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties:
