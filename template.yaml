@@ -327,7 +327,26 @@ Resources:
             INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
             IP_ADDRESS="$(hostname -I | cut -d" " -f1)"
 
-            echo "<html><h1>Welcome to my Auto Scaling Lab!</h1><p>Created by Derrick</p></html>" > /var/www/html/index.html    
+            cat > /var/www/html/index.html <<EOF
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <title>Auto Scaling Lab</title>
+              </head>
+              <body>
+                <h1>Hello from $IP_ADDRESS / $INSTANCE_ID</h1>
+                <button onclick="stressCPU()">Stress CPU</button>
+                <script>
+                  function stressCPU() {
+                    fetch('/stress', { method: 'POST' })
+                      .then(response => response.text())
+                      .then(data => alert(data))
+                      .catch(error => console.error('Error:', error));
+                  }
+                </script>
+              </body>
+            </html>
+            EOF
             systemctl restart httpd
   AutoScalingPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
