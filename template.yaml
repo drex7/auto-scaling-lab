@@ -315,12 +315,53 @@ Resources:
               Value: !Sub "${ProjectTag}"
         UserData:
           Fn::Base64: !Sub |
-            #!/bin/bash
+            #!/bin/bash -xe
+
+            exec > >(tee /var/log/user-data.log) 2>&1
+            cho "Starting UserData execution at $(date)"
+
             yum update -y
-            yum install -y httpd
+            yum install -y httpd stress mod_proxy_fcgi
             systemctl start httpd
             systemctl enable httpd
-            echo "<html><h1>Welcome to my Auto Scaling Lab!</h1><p>Created by Derrick</p></html>" > /var/www/html/index.html    
+            INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+            IP_ADDRESS="$(hostname -I | cut -d" " -f1)"
+
+            cat > /var/www/html/index.html <<EOF
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <title>Auto Scaling Lab</title>
+              </head>
+              <body>
+                <h1>Hello from $IP_ADDRESS / $INSTANCE_ID</h1>
+                <button onclick="stressCPU()">Stress CPU</button>
+                <script>
+                  function stressCPU() {
+                    fetch('/stress', { method: 'POST' })
+                      .then(response => response.text())
+                      .then(data => alert(data))
+                      .catch(error => console.error('Error:', error));
+                  }
+                </script>
+              </body>
+            </html>
+            EOF
+            cat > /var/www/html/stress.sh <<EOF
+            #!/bin/bash
+            stress --cpu 1 --timeout 60
+            echo "CPU stress test completed"
+            EOF
+            chmod +x /var/www/html/stress.sh
+            cat > /etc/httpd/conf.d/stress.conf <<EOF
+            <VirtualHost *:80>
+                DocumentRoot /var/www/html
+                <Location /stress>
+                  ProxyPass "unix:/tmp/stress.sock|fcgi://localhost/var/www/html/stress.sh"
+                </Location>
+            </VirtualHost>
+            EOF
+            systemctl restart httpd
   AutoScalingPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties:
