@@ -321,7 +321,7 @@ Resources:
             cho "Starting UserData execution at $(date)"
 
             yum update -y
-            yum install -y httpd stress mod_proxy_fcgi
+            yum install -y httpd
             systemctl start httpd
             systemctl enable httpd
             INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
