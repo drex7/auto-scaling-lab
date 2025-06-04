@@ -315,7 +315,7 @@ Resources:
               Value: !Sub "${ProjectTag}"
         UserData:
           Fn::Base64: !Sub |
-            #!/bin/bash -xe
+            #!/bin/bash -x
 
             exec > >(tee /var/log/user-data.log) 2>&1
             cho "Starting UserData execution at $(date)"
