@@ -321,6 +321,7 @@ Resources:
             echo "Starting UserData execution at $(date)"
 
             yum update -y
+            amazon-linux-extras install epel -y
             yum install -y httpd stress
             systemctl start httpd
             systemctl enable httpd
@@ -356,7 +357,7 @@ Resources:
                     fetch('/cgi-bin/simulate-cpu-stress.cgi', { method: 'POST' })
                       .then(response => response.text())
                       .then(data => { 
-                        console.log(data);
+                        console.log("data -> ", data);
                         console.log(`IP_ADDRESS -> ${IP_ADDRESS} \n INSTANCE_ID -> ${INSTANCE_ID}`);
                         alert('CPU stress initiated! Scaling may occur if utilization exceeds 50%');
                       })
@@ -372,8 +373,9 @@ Resources:
             #!/bin/bash
             echo "Content-type: text/html"
             echo ""
-            echo "Starting CPU stress test for 60 seconds..."
-            nohup stress --cpu 2 --timeout 60 >/dev/null 2>&1 &
+            echo "Starting CPU stress test for 30 seconds..."
+            nohup stress --cpu 4 --timeout 30 >> /var/log/stress.log 2>&1 &
+            echo \$? >> /var/log/stress.log
             EOF
             chmod +x /var/www/cgi-bin/simulate-cpu-stress.cgi
             
