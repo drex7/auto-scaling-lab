@@ -322,7 +322,6 @@ Resources:
 
             yum update -y
             amazon-linux-extras install epel -y
-            amazon-linux-extras install epel -y
             yum install -y httpd stress
             systemctl start httpd
             systemctl enable httpd
