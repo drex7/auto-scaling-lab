@@ -358,7 +358,7 @@ Resources:
                       .then(response => response.text())
                       .then(data => { 
                         console.log("data -> ", "data -> ", data);
-                        console.log(`IP_ADDRESS -> ${IP_ADDRESS} \n INSTANCE_ID -> ${INSTANCE_ID}`);
+                        console.log(`IP_ADDRESS -> $IP_ADDRESS \n INSTANCE_ID -> $INSTANCE_ID`);
                         alert('CPU stress initiated! Scaling may occur if utilization exceeds 50%');
                       })
                       .catch(error => console.error('Error:', error));
