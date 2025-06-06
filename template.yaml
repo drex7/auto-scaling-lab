@@ -315,7 +315,7 @@ Resources:
               Value: !Sub "${ProjectTag}"
         UserData:
           Fn::Base64: !Sub |
-            #!/bin/bash -x
+            #!/bin/bash -xe
 
             exec > >(tee /var/log/user-data.log) 2>&1
             echo "Starting UserData execution at $(date)"
@@ -356,7 +356,8 @@ Resources:
                     fetch('/cgi-bin/simulate-cpu-stress.cgi', { method: 'POST' })
                       .then(response => response.text())
                       .then(data => { 
-                        console.log("data ->", data);
+                        console.log(data);
+                        console.log(`IP_ADDRESS -> ${IP_ADDRESS} \n INSTANCE_ID -> ${INSTANCE_ID}`);
                         alert('CPU stress initiated! Scaling may occur if utilization exceeds 50%');
                       })
                       .catch(error => console.error('Error:', error));
@@ -374,8 +375,8 @@ Resources:
             echo "Starting CPU stress test for 60 seconds..."
             nohup stress --cpu 2 --timeout 60 >/dev/null 2>&1 &
             EOF
-            chmod +x /var/www/html/simulate-cpu-stress
-            ln -s /var/www/html/simulate-cpu-stress /var/www/cgi-bin/simulate-cpu-stress.cgi
+            chmod +x /var/www/cgi-bin/simulate-cpu-stress.cgi
+            
   AutoScalingPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties:
