@@ -373,8 +373,8 @@ Resources:
             #!/bin/bash
             echo "Content-type: text/html"
             echo ""
-            echo "Starting CPU stress test for 30 seconds..."
-            nohup stress --cpu 4 --timeout 30 >> /var/log/stress.log 2>&1 &
+            echo "Starting CPU stress test for 60 seconds..."
+            nohup stress --cpu 4 --timeout 60 --vm 2 --vm-bytes 256M >> /var/log/stress.log 2>&1 &
             echo \$? >> /var/log/stress.log
             EOF
             chmod +x /var/www/cgi-bin/simulate-cpu-stress.cgi
