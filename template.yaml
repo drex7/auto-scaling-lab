@@ -324,6 +324,19 @@ Resources:
             yum install -y httpd stress
             systemctl start httpd
             systemctl enable httpd
+
+            # Enable CGI module and configure Apache
+            cat <<EOF > /etc/httpd/conf.d/cgi-bin.conf
+            <Directory "/var/www/cgi-bin">
+                AllowOverride None
+                Options +ExecCGI
+                AddHandler cgi-script .cgi
+                Require all granted
+            </Directory>
+            EOF
+
+            # Restart Apache to apply CGI config
+            systemctl restart httpd
             
             INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
             IP_ADDRESS="$(hostname -I | cut -d" " -f1)"
@@ -354,13 +367,11 @@ Resources:
             #!/bin/bash
             echo "Content-type: text/html"
             echo ""
-            echo "<html><body>"
             echo "Starting CPU stress test for 60 seconds..."
-            echo "</body></html>"
             nohup stress --cpu 2 --timeout 60 >/dev/null 2>&1 &
             EOF
             chmod +x /var/www/html/simulate-cpu-stress
-            ln -s /var/www/html/simulate-cpu-stress /var/www/cgi-bin/simulate-cpu-stress
+            ln -s /var/www/html/simulate-cpu-stress /var/www/cgi-bin/simulate-cpu-stress.cgi
   AutoScalingPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties:
