@@ -318,7 +318,7 @@ Resources:
             #!/bin/bash -x
 
             exec > >(tee /var/log/user-data.log) 2>&1
-            cho "Starting UserData execution at $(date)"
+            echo "Starting UserData execution at $(date)"
 
             yum update -y
             yum install -y httpd stress
