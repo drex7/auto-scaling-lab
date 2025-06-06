@@ -338,20 +338,7 @@ Resources:
             # Restart Apache to apply CGI config
             systemctl restart httpd
             
-
-            # Enable CGI module and configure Apache
-            cat <<EOF > /etc/httpd/conf.d/cgi-bin.conf
-            <Directory "/var/www/cgi-bin">
-                AllowOverride None
-                Options +ExecCGI
-                AddHandler cgi-script .cgi
-                Require all granted
-            </Directory>
-            EOF
-
-            # Restart Apache to apply CGI config
-            systemctl restart httpd
-            
+          
             INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
             IP_ADDRESS="$(hostname -I | cut -d" " -f1)"
 
@@ -368,7 +355,10 @@ Resources:
                   function stressCPU() {
                     fetch('/cgi-bin/simulate-cpu-stress.cgi', { method: 'POST' })
                       .then(response => response.text())
-                      .then(data => alert(data))
+                      .then(data => { 
+                        console.log("data ->", data);
+                        alert('CPU stress initiated! Scaling may occur if utilization exceeds 50%');
+                      })
                       .catch(error => console.error('Error:', error));
                   }
                 </script>
